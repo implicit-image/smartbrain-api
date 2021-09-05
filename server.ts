@@ -1,6 +1,7 @@
 
 import express from 'express'
-import fs from 'fs'
+import bcrypt from 'bcrypt'
+
 
 const database = {
   users: [
@@ -8,7 +9,6 @@ const database = {
       id: '1',
       name: 'John',
       email: 'john@gmail.com',
-      password: 'cookies',
       entries: 0,
       joined: new Date()
     },
@@ -16,11 +16,18 @@ const database = {
       id: '2',
       name: 'Sally',
       email: 'sally@gmail.com',
-      password: 'bananas',
       entries: 0,
       joined: new Date()
     }
-  ] as User[]
+  ] as User[],
+  login: [
+    {
+      id: '23',
+      hash: '',
+      email: 'john@gmail.com'
+    }
+  ]
+
 }
 
 interface User {
@@ -35,7 +42,7 @@ interface User {
 
 const app = express()
 const PORT: number = 3001
-
+const SALT_ROUNDS = 10
 //middleware
 // we will parse json for logging in and signing in
 app.use(express.json())
@@ -52,10 +59,8 @@ app.get('/', (req, res) => {
 //  /signin -> POST success/fail
 app.post('/signin', (req, res) => {
   // if there is no response it will hang
-  console.log('responding to', req.body)
   const found = database.users
     .filter((u: User) => u.email == req.body.email && u.password == req.body.password)[0]
-
 
   found
     ? res.json(found)
@@ -63,28 +68,41 @@ app.post('/signin', (req, res) => {
 
 })
 
+
 // /signup -> POST created user
 app.post('/signup', (req, res) => {
-  const user: User = {
-    id: '3',
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-    entries: 0,
-    joined: new Date()
-  }
 
-  database.users.push(user)
-  res.json(user)
+  const { name, email, password } = req.body
+
+  bcrypt.hash(password, SALT_ROUNDS, (err, hash) => {
+    console.log(hash)
+    const user: User = {
+      id: '3',
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      entries: 0,
+      joined: new Date()
+    }
+
+    res.json(user)
+  })
+
+
+
+  // database.users.push(user)
 })
+
 
 //  /profile/:id -> GET user with id $id
 app.get('/profile/:id', (req, res) => {
-  const id: string = req.params.id
+  const id: string = req.params.id //params contains url parameters
   const found: User | undefined = database.users   // ids are unique
     .filter((user: User) => user.id == id)[0]
 
-  found ? res.json(found) : res.status(404).json('user not found')
+  found
+    ? res.json(found)
+    : res.status(404).json('user not found')
 })
 
 
@@ -92,19 +110,20 @@ app.get('/profile/:id', (req, res) => {
 app.put('/image', (req, res) => {
   const { id } = req.body // id will be included in the body of the request
 
-  // const found: User | undefined = database.users.filter((user: User) => user.id == id)[0]
+  const found: User | undefined = database.users.filter((user: User) => user.id == id)[0]
 
-  // found ? database.users.
-  const found = false
-  for (const user of database.users) {
-    if (user.id == id) {
-      !found
-      user.entries++
-      break
-    }
+  if (found) {
+
+    const updated: User = { ...found, entries: found.entries + 1 }
+
+    database.users = database.users
+      .map((user: User) => user.id == updated.id ? updated : user)
+
+    res.json(updated)
+  } else {
+    res.status(404).json('user not found')
   }
 
-  found ? res.json()
 })
 
 app.listen(PORT)

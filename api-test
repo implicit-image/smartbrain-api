@@ -1,0 +1,100 @@
+#!/usr/bin/zsh
+function usage {
+	echo "usage: \n api-test [[--port | -p] <port>] [[--route | -r] <route>] "
+}
+
+function fail {
+	case $1 in
+		route)
+			echo "incorrect route"
+			exit 2
+			;;
+		*)
+			exit 1
+	esac
+}
+
+
+# signin data
+signin_email="john@gmail.com"
+signin_password="cookies"
+# signup data
+signup_name="ann"
+signup_email="ann@gmail.com"
+signup_pasword="cookies"
+
+
+route="/"
+port=3001
+data="default"
+
+
+while getopts 'p:r:d:-:' OPT; do
+	# support long options: https://stackoverflow.com/a/28466267/519360
+	if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+		# extract long option name
+		OPT="${OPTARG%%=*}"
+		# extract long option argument (may be empty)
+		OPTARG="${OPTARG#$OPT}"
+		# if long option argument, remove assigning `=`
+		OPTARG="${OPTARG#=}"
+	fi
+	case $OPT in
+		p | port)
+			port="$OPTARG"
+			;;
+		"r" | "route")
+			route="$OPTARG"
+			;;
+		"d" | "data")
+			data=$OPTARG
+			;;
+		*)
+			usage
+			;;
+	esac
+done
+
+echo route: $route
+echo port: $port
+
+
+case "$route" in
+	/)
+		verb="GET"
+		data=""
+		;;
+	profile/* | /profile/*)
+		verb="GET"
+		data=""
+		;;
+	signin | /signin)
+		verb="POST"
+		if [[ $data == "default" ]]; then
+			data="email=$signin_email password=$signin_password"
+		fi
+		;;
+	signup | /signup)
+		verb="POST"
+		if [[ $data == "default" ]]; then
+			data="name=$signup_name email=$signin_email password=$signin_password"
+		fi
+		;;
+	image | /image)
+		verb="PUT"
+		if [[ $data == "default" ]]; then
+			data="id=1"
+		fi
+		;;
+	*)
+		fail route
+		;;
+esac
+
+echo data: $data
+
+if [[ $route == /* ]]; then
+	http $verb ":$port${route}" $data
+else
+	http $verb ":$port/$route" $data
+fi

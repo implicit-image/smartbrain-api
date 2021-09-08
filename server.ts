@@ -1,6 +1,10 @@
 
 import express from 'express'
 import bcrypt from 'bcrypt'
+import cors from 'cors'
+
+
+
 
 
 const database = {
@@ -9,6 +13,7 @@ const database = {
       id: '1',
       name: 'John',
       email: 'john@gmail.com',
+      password: 'cookies',
       entries: 0,
       joined: new Date()
     },
@@ -16,19 +21,26 @@ const database = {
       id: '2',
       name: 'Sally',
       email: 'sally@gmail.com',
+      password: 'bananas',
       entries: 0,
       joined: new Date()
     }
   ] as User[],
-  login: [
+  logins: [
     {
       id: '23',
       hash: '',
       email: 'john@gmail.com'
     }
-  ]
-
+  ] as LoginEntry[]
 }
+
+interface LoginEntry {
+  id: string,
+  hash: string,
+  email: string
+}
+
 
 interface User {
   id: string,
@@ -39,16 +51,22 @@ interface User {
   joined: Date
 }
 
+interface Result {
+  status: string,
+  user: User
+}
 
 const app = express()
-const PORT: number = 3001
+const PORT = 3001
 const SALT_ROUNDS = 10
+
+
+
 //middleware
 // we will parse json for logging in and signing in
 app.use(express.json())
 //and urlencoded for parsing forms
-app.use(express.urlencoded({extended: true}))
-
+app.use(cors())
 //root
 //  / -> res 'this is working'
 app.get('/', (req, res) => {
@@ -59,13 +77,31 @@ app.get('/', (req, res) => {
 //  /signin -> POST success/fail
 app.post('/signin', (req, res) => {
   // if there is no response it will hang
-  const found = database.users
-    .filter((u: User) => u.email == req.body.email && u.password == req.body.password)[0]
 
-  found
-    ? res.json(found)
-    : res.status(400).json('error logging in')
+  const { email, password } = req.body
 
+  const found_user = database.users
+    .filter((u: User) => u.email == email && u.password == password)[0]
+
+
+  found_user
+    ? res.json({ status: 'success', user: found_user })
+    : res.status(404).json("user not found")
+
+  // if (found_user) {
+  //   const found_login = database.logins.filter((entry: LoginEntry) => {
+  //     entry.email == found_user.email
+  //   })[0]
+
+  //   bcrypt
+  //     .compare(rq_password, found_login.hash)
+  //     .then((eq) => {
+  //       console.log(eq)
+  //     })
+  //     .catch(err => res.status(404).json("error logging in"))
+  // } else {
+  //   res.status(400).json("error logging in")
+  // }
 })
 
 
@@ -74,24 +110,43 @@ app.post('/signup', (req, res) => {
 
   const { name, email, password } = req.body
 
-  bcrypt.hash(password, SALT_ROUNDS, (err, hash) => {
-    console.log(hash)
+  if (! database.users.some((u: User) => u.email == email && u.password == password)) {
     const user: User = {
       id: '3',
-      name: req.body.name,
-      email: req.body.email,
-      password: req.body.password,
+      name: name,
+      email: email,
+      password: password,
       entries: 0,
       joined: new Date()
     }
+    database.users.push(user)
+    res.json({ status: 'success', user: user })
+  } else {
+    res.status(400).json("user already exists")
+  }
 
-    res.json(user)
-  })
+  // bcrypt
+  //   .hash(password, SALT_ROUNDS)
+  //   .then((hash: string) => {
+  //     console.log(hash)
+  //     const user: User = {
+  //       id: '3',
+  //       name: name,
+  //       email: email,
+  //       entries: 0,
+  //       joined: new Date()
+  //     }
 
-
-
-  // database.users.push(user)
+  //     database.users.push(user)
+  //     console.log(database.users)
+  //     res.json(user)
+  //   })
+  //   .catch(err => {
+  //     console.log(err)
+  //     res.status(400).json(req)
+  //   })
 })
+
 
 
 //  /profile/:id -> GET user with id $id

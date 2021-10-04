@@ -1,10 +1,12 @@
 
 import express from 'express'
+// const express = require('express')
 import bcrypt from 'bcrypt'
 import cors from 'cors'
 
 
 
+import { LoginEntry, User } from './types'
 
 
 const database = {
@@ -35,31 +37,10 @@ const database = {
   ] as LoginEntry[]
 }
 
-interface LoginEntry {
-  id: string,
-  hash: string,
-  email: string
-}
-
-
-interface User {
-  id: string,
-  name: string,
-  email: string,
-  password: string,
-  entries: number,
-  joined: Date
-}
-
-interface Result {
-  status: string,
-  user: User
-}
 
 const app = express()
 const PORT = 3001
-const SALT_ROUNDS = 10
-
+// const SALT_ROUNDS = 10
 
 
 //middleware

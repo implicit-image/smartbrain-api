@@ -12,11 +12,9 @@ const handleSignIn = (req: any, res: any, db: any, bcrypt: any) => {
     .select('*')
     .where('login.email', email)
     .then((info: any) => {
-      console.log(info)
       bcrypt
         .compare(password, info[0].hash)
         .then((identical: boolean) => {
-          console.log(`COMPARISON RESULT IS: ${identical}`)
           if (identical) {
             delete info[0].hash
             res.json(info[0])

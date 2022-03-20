@@ -11,29 +11,30 @@ const app = new Clarifai.App({
 
 
 const handleImage = (req: any, res: any) => (db: any) => {
-  const { id, imgUrl, modelId } = req.body // id will be included in the body of the request
+  const { id, url, modelId } = req.body // id will be included in the body of the request
+
 
   app.models
-    .predict(modelId, imgUrl)
-    .then((response: Response) => {
-      if (response.statusCode == 200) {
+    .predict(modelId, url)
+    .then((response: any) => {
+      if (response.status.description === 'Ok') {
         db('users')
           .returning('*')
           .where({ id: id })
           .increment('entries', 1)
-          .then((user: User) => {
-            console.log(user)
-            res.json(user)
+          .then((found: any) => {
+            res.status(200).json({ user: found[0], response })
           })
           .catch((e : Error) => {
-            console.log(e)
             res
               .status(400)
               .json("unable to get entries")
           })
       }
     })
-    .catch((err: Error) => console.log(err))
+    .catch((e: Error) => {
+      res.status(404).json(e)
+    })
 
 
 }

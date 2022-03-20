@@ -7,11 +7,9 @@ const handleProfileGet = (req: any, res: any, db: any) => {
     .select('*')
     .where({ id: id })
     .then((user: User) => {
-      console.log(user)
       res.json(user)
     })
     .catch((err: Error) => {
-      console.log(err)
       res.status(404).json("user not found")
     })
 }

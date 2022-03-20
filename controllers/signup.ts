@@ -25,7 +25,6 @@ const handleSignup = (req: any, res: any, db: Knex<any, any>, bcrypt: any) => {
             hash
           })
           .then((inserts) => {
-            console.log(inserts)
             return trx
               .table('users')
               .returning('*')
@@ -40,7 +39,7 @@ const handleSignup = (req: any, res: any, db: Knex<any, any>, bcrypt: any) => {
           })
       })
       .catch((err: Error) => {
-        console.log(err)  //TODO add proper error handling
+        res.status(400).json(err)
       })
   })
 }
